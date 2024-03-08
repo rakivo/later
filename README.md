@@ -1,3 +1,4 @@
-TODO: > - create proper README.md
-      > - add description
-      > - add LICENSE
+TODO:
+> - create proper README.md
+> - add description
+> - add LICENSE
