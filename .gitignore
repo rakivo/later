@@ -1,2 +1,4 @@
 main
 go.sum
+.env
+my.db

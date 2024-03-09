@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="index.css">
-    <title>Later</title>
+    <link rel="stylesheet" href="static/index.css">
+    <title>later</title>
 </head>
 <body>
-    <form action="/watchlater" method="GET">
+    <form action={{.PostAddr}} method="POST">
         <input type="text" id="link" placeholder="enter a link...">
         <button type="submit">Send</button>
     </form>
