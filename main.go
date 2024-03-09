@@ -1,17 +1,17 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"log"
-	"time"
 	"context"
-	"net/http"
-	re "regexp"
 	"encoding/json"
-	bolt "go.etcd.io/bbolt"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	env "github.com/joho/godotenv"
+	bolt "go.etcd.io/bbolt"
+	"log"
+	"net/http"
+	"os"
+	re "regexp"
+	"time"
 )
 
 const (
@@ -30,7 +30,9 @@ var (
 func checkErr(err error, exit bool) {
 	if err != nil {
 		log.Println(err)
-		if exit { os.Exit(1) }
+		if exit {
+			os.Exit(1)
+		}
 	}
 }
 
@@ -48,15 +50,18 @@ func extractYouTubeID(url string) (string, error) {
 func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, error) {
 	url := fmt.Sprintf(GOOGLE_YT_API, id, apiKey)
 
-	req, err := http.NewRequest("GET", url, nil); if err != nil {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
 		return "", fmt.Errorf("Error creating HTTP request: %v", err)
 	}
-	ctx, cancel := context.WithTimeout(req.Context(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
 	defer cancel()
 
-	resp, err := client.Do(req.WithContext(ctx)); if err != nil {
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
 		return "", fmt.Errorf("Error making HTTP request: %v", err)
-	}; defer resp.Body.Close()
+	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
 	}
@@ -75,6 +80,8 @@ func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, err
    "/" POST function
    maybe feature to extract thumbnails
    proper frontend
+   proper README
+   LICENSE
    proper db integration
    etc
 */
@@ -83,10 +90,12 @@ func main() {
 	err := env.Load(); checkErr(err, true)
 	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
 
-	db, err := bolt.Open("my.db", 0600, nil); if err != nil {
+	db, err := bolt.Open("my.db", 0600, nil)
+	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
-	}; defer db.Close()
+	}
+	defer db.Close()
 
 	gin.SetMode(gin.DebugMode)
 
@@ -97,11 +106,15 @@ func main() {
 	r.LoadHTMLGlob("static/*")
 
 	id, err := extractYouTubeID(TEST_YT_URL); checkErr(err, false)
-	if err == nil { log.Println("ID:", id) }
+	if err == nil {
+		log.Println("ID:", id)
+	}
 
-	client := http.Client{ Timeout: 5 * time.Second, }
+	client := http.Client{Timeout: 5 * time.Second}
 	title, err := getYouTubeTitle(&client, id, YT_API_KEY); checkErr(err, false)
-	if err == nil { log.Println("TITLE:", title) }
+	if err == nil {
+		log.Println("TITLE:", title)
+	}
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
@@ -114,7 +127,9 @@ func main() {
 	defer close(done)
 	go func() {
 		err := r.Run(ADDR)
-		if err != nil { done <- err }
+		if err != nil {
+			done <- err
+		}
 	}()
 
 	err = <-done; checkErr(err, true)
