@@ -1,17 +1,17 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
+	"os"
+	"log"
 	"fmt"
+	"time"
+	"context"
+	"net/http"
+	re "regexp"
+	"encoding/json"
+	bolt "go.etcd.io/bbolt"
 	"github.com/gin-gonic/gin"
 	env "github.com/joho/godotenv"
-	bolt "go.etcd.io/bbolt"
-	"log"
-	"net/http"
-	"os"
-	re "regexp"
-	"time"
 )
 
 const (
@@ -50,15 +50,13 @@ func extractYouTubeID(url string) (string, error) {
 func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, error) {
 	url := fmt.Sprintf(GOOGLE_YT_API, id, apiKey)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
+	req, err := http.NewRequest("GET", url, nil); if err != nil {
 		return "", fmt.Errorf("Error creating HTTP request: %v", err)
 	}
-	ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(req.Context(), 5 * time.Second)
 	defer cancel()
 
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
+	resp, err := client.Do(req.WithContext(ctx)); if err != nil {
 		return "", fmt.Errorf("Error making HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
@@ -90,8 +88,7 @@ func main() {
 	err := env.Load(); checkErr(err, true)
 	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
 
-	db, err := bolt.Open("my.db", 0600, nil)
-	if err != nil {
+	db, err := bolt.Open("my.db", 0600, nil); if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
@@ -106,15 +103,11 @@ func main() {
 	r.LoadHTMLGlob("static/*")
 
 	id, err := extractYouTubeID(TEST_YT_URL); checkErr(err, false)
-	if err == nil {
-		log.Println("ID:", id)
-	}
+	if err == nil { log.Println("ID:", id) }
 
 	client := http.Client{Timeout: 5 * time.Second}
 	title, err := getYouTubeTitle(&client, id, YT_API_KEY); checkErr(err, false)
-	if err == nil {
-		log.Println("TITLE:", title)
-	}
+	if err == nil { log.Println("TITLE:", title) }
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
