@@ -10,15 +10,18 @@ import (
 	re "regexp"
 	"encoding/json"
 	bolt "go.etcd.io/bbolt"
+	"github.com/google/uuid"
 	"github.com/gin-gonic/gin"
 	env "github.com/joho/godotenv"
 )
 
 const (
-	ADDR          = "127.0.0.1:6969"
-	YT_REGEXP     = `(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})`
-	TEST_YT_URL   = "https://www.youtube.com/watch?v=86j5alcXLJE&list=PLDZ_9qD1hkzMdre6oedUdyDTgoJYq-_AY&index=4"
-	GOOGLE_YT_API = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s"
+	ADDR             = "127.0.0.1:6969"
+	YT_BUCK          = "YT_BUCKET"
+	YT_REGEXP        = `(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})`
+	TEST_YT_URL      = "https://youtu.be/LjrCckaHjB0?si=b_6nst1A-0qUaVl5"
+	YT_GET_TITLE     = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s"
+	YT_GET_THUMBNAIL = "https://img.youtube.com/vi/%s/hqdefault.jpg"
 )
 
 var (
@@ -48,7 +51,7 @@ func extractYouTubeID(url string) (string, error) {
 }
 
 func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, error) {
-	url := fmt.Sprintf(GOOGLE_YT_API, id, apiKey)
+	url := fmt.Sprintf(YT_GET_TITLE, id, apiKey)
 
 	req, err := http.NewRequest("GET", url, nil); if err != nil {
 		return "", fmt.Errorf("Error creating HTTP request: %v", err)
@@ -60,6 +63,7 @@ func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, err
 		return "", fmt.Errorf("Error making HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
 	}
@@ -72,6 +76,49 @@ func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, err
 	}
 
 	return vidResp.Items[0].Snippet.Title, nil
+}
+
+func getYouTubeThumbnail(id string) string {
+	return fmt.Sprintf(YT_GET_THUMBNAIL, id)
+}
+
+func DBputVideo(db **bolt.DB, bucket []byte, video *Video) error {
+	err := (*db).Update(func(tx *bolt.Tx) error {
+		buck, err := tx.CreateBucketIfNotExists(bucket); if err != nil {
+			return fmt.Errorf("Error creating bucket: %v", err)
+		}
+
+		keyBytes := video.key[:]
+		data, err := json.Marshal(video); if err != nil {
+			return fmt.Errorf("Error marshalling video data: %v", err)
+		}
+
+		if err = buck.Put(keyBytes, data); err != nil {
+			return fmt.Errorf("Error putting data: %v", err)
+		}
+		return nil
+	})
+	return err
+}
+
+func DBgetVideo(db **bolt.DB, bucket []byte, key uuid.UUID) (Video, error) {
+	var video Video
+	err := (*db).View(func(tx *bolt.Tx) error {
+		buck := tx.Bucket(bucket); if buck == nil {
+			return fmt.Errorf("Bucket %s not found", bucket)
+		}
+
+		keyBytes := key[:]
+		data := buck.Get(keyBytes); if data == nil {
+			return fmt.Errorf("Key not found: %s", key)
+		}
+
+		if err := json.Unmarshal(data, &video); err != nil {
+			return fmt.Errorf("Error unmarshalling video data: %v", err)
+		}
+		return nil
+	});
+	return video, err
 }
 
 /* TODO:
@@ -99,15 +146,28 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.SetTrustedProxies(TrustedProxies)
 	r.LoadHTMLGlob("static/*")
+	r.Static("/static", "./static")
+	r.SetTrustedProxies(TrustedProxies)
 
 	id, err := extractYouTubeID(TEST_YT_URL); checkErr(err, false)
 	if err == nil { log.Println("ID:", id) }
 
-	client := http.Client{Timeout: 5 * time.Second}
+	client := http.Client{ Timeout: 5 * time.Second }
 	title, err := getYouTubeTitle(&client, id, YT_API_KEY); checkErr(err, false)
 	if err == nil { log.Println("TITLE:", title) }
+
+	thumbnail := getYouTubeThumbnail(id)
+
+	video := Video{}.New(title, thumbnail, uuid.New())
+
+	err = DBputVideo(&db, []byte(YT_BUCK), video)
+
+	*video, err = DBgetVideo(&db, []byte(YT_BUCK), video.key); if err == nil {
+		log.Println("------------------------")
+		log.Println(video.String())
+		log.Println("------------------------")
+	}
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
@@ -125,5 +185,5 @@ func main() {
 		}
 	}()
 
-	err = <-done; checkErr(err, true)
+	checkErr(<-done, true)
 }
