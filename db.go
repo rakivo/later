@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func DBputVideo(db **bolt.DB, bucket []byte, video *Video) error {
-	err := (*db).Update(func(tx *bolt.Tx) error {
+func DBaddVideo(db **bolt.DB, bucket []byte, video *Video) error {
+	return (*db).Update(func(tx *bolt.Tx) error {
 		buck, err := tx.CreateBucketIfNotExists(bucket); if err != nil {
 			return fmt.Errorf("Error creating bucket: %v", err)
 		}
@@ -23,7 +23,6 @@ func DBputVideo(db **bolt.DB, bucket []byte, video *Video) error {
 		}
 		return nil
 	})
-	return err
 }
 
 func DBgetVideo(db **bolt.DB, bucket []byte, key uuid.UUID) (Video, error) {

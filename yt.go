@@ -11,18 +11,18 @@ import (
 
 const (
 	YT_BUCK          = "YT_BUCKET"
-	YT_REGEXP        = `(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})`
+	YT_REGEXP        = `^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*`
 	TEST_YT_URL      = "https://youtu.be/LjrCckaHjB0?si=b_6nst1A-0qUaVl5"
 	YT_GET_TITLE     = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s"
 	YT_GET_THUMBNAIL = "https://img.youtube.com/vi/%s/hqdefault.jpg"
 )
 
 func extractYouTubeID(url string) (string, error) {
-	matches := re.MustCompile(YT_REGEXP).FindStringSubmatch(url)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("Video ID not found")
+	match := re.MustCompile(YT_REGEXP).FindStringSubmatch(url)
+	if len(match) >= 3 && len(match[2]) == 11 {
+		return match[2], nil
 	}
-	return matches[1], nil
+	return "", fmt.Errorf("Invalid YouTube URL: %s", url)
 }
 
 func getYouTubeTitle(client *http.Client, id string, apiKey string) (string, error) {

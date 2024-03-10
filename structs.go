@@ -35,6 +35,14 @@ func (_ KeyVid) New(key uuid.UUID, vid *Video) KeyVid {
 	}
 }
 
+func KeyVids2Videos(kvs []KeyVid) []Video {
+	videos := make([]Video, len(kvs))
+	for i, v := range kvs {
+		videos[i] = v.vid
+	}
+	return videos
+}
+
 type VideoManager struct {
 	order map[string][]KeyVid
 	sizes map[string]uint32
@@ -45,6 +53,13 @@ func (_ VideoManager) New() *VideoManager {
 		order: make(map[string][]KeyVid),
 		sizes: make(map[string]uint32),
 	}
+}
+
+func (vm VideoManager) GetKeyVidsFromBucket(buck string) ([]KeyVid, error) {
+	if _, ok := vm.order[buck]; !ok {
+		return nil, fmt.Errorf("ERROR: No such bucket: %s", buck)
+	}
+	return vm.order[buck], nil
 }
 
 func (vm VideoManager) AddVideo(buck string, key uuid.UUID, video *Video) {

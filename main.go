@@ -24,28 +24,32 @@ var (
 
 func checkErr(err error, exit bool) {
 	if err != nil {
-		log.Println(err)
+		log.Println("ERROR:", err)
 		if exit {
 			os.Exit(1)
 		}
 	}
 }
 
+// get video's id, title, thumbnail; add created video to db and vm
 func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string) (*Video, error) {
 	id, err := extractYouTubeID(url); if err != nil {
-		return nil, fmt.Errorf("failed to extract YouTube ID: %v", err)
+		return nil, fmt.Errorf("Failed to extract YouTube ID: %v", err)
 	}
+	log.Println("Extracted id:", id)
 	title, err := getYouTubeTitle(client, id, apiKey); if err != nil {
 		return nil, fmt.Errorf("failed to get YouTube title: %v", err)
 	}
+	log.Println("Extracted title:", title)
 
 	thumbnail := getYouTubeThumbnail(id)
 	key := uuid.New()
+
 	video := Video{}.New(title, thumbnail, key)
-	vm.AddVideo(buck, key, video)
-	if err = DBputVideo(db, []byte(buck), video); err != nil {
-		return nil, fmt.Errorf("failed to put video in database: %v", err)
+	if err = DBaddVideo(db, []byte(buck), video); err != nil {
+		return nil, fmt.Errorf("Failed to put video in database: %v", err)
 	}
+	vm.AddVideo(buck, key, video)
 	return video, nil
 }
 
@@ -65,7 +69,7 @@ func main() {
 
 	db, err := bolt.Open("my.db", 0600, nil); if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
+		return;
 	}
 	defer db.Close()
 
@@ -81,31 +85,37 @@ func main() {
 	client := http.Client{ Timeout: 5 * time.Second }
 	vm := VideoManager{}.New()
 
-	latestvideo := Video{}.New("", "", uuid.New())
-
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"PostAddr": "/",
 		})
 	})
 	r.POST("/", func(c *gin.Context) {
-		latestvideo, err = addVideo(c, &db, vm, YT_BUCK, TEST_YT_URL, &client, YT_API_KEY)
-		// JUST FOR TEST:
+		url := c.PostForm("link")
+		log.Println("Catched url:", url)
+
+		latestvideo, err := addVideo(c, &db, vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
 		*latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
 			log.Println("------DB GET VIDEO------")
 			log.Println(latestvideo.String())
 		} else {
-			log.Println("ERROR:", err)
+			log.Println("DB ERROR:", err)
 		}
-		ordervid, err := vm.GetVideo(YT_BUCK, 0); if err == nil {
-			log.Println("-----ORDER GET VIDEO----")
-			log.Println(ordervid.String())
+
+		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
+		if len(kvs) == 0 {
+			log.Println("No videos found")
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"PostAddr": "/",
+				"Videos":   nil,
+			})
 		} else {
-			log.Println("ERROR:", err)
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"PostAddr": "/",
+				"Videos": KeyVids2Videos(kvs),
+			})
 		}
 	})
-
-	latestvideo.Thumbnail = ";";
 
 	done := make(chan error, 1)
 	defer close(done)
