@@ -11,7 +11,7 @@ type Video struct {
 	key       uuid.UUID
 }
 
-func (vid Video) New(Title string, Thumbnail string, key uuid.UUID) *Video {
+func (_ Video) New(Title string, Thumbnail string, key uuid.UUID) *Video {
 	return &Video {
 		Title,
 		Thumbnail,
@@ -20,7 +20,7 @@ func (vid Video) New(Title string, Thumbnail string, key uuid.UUID) *Video {
 }
 
 func (v Video) String() string {
-	return fmt.Sprintf("Video{Title: %s, Thumbnail: %s, Key: %s}", v.Title, v.Thumbnail, v.key)
+    return fmt.Sprintf("Video{\n    Title: \t%s, \n    Thumbnail: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.key)
 }
 
 type YouTubeSnippet struct {
