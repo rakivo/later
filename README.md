@@ -10,6 +10,11 @@ git clone --depth 1 https://github.com/rakivo/later && cd later
 YOUTUBE_API_KEY = "PUT YOUR API KEY BETWEEN THIS QUOTATION MARKS"
 ```
 > - You need to obtain free [YouTube Data API v3 api key](https://developers.google.com/youtube/v3), follow this [guide from Google](https://developers.google.com/youtube/v3/getting-started). This is needed because there's no way(AFAIK) to get the title of a YT video without an API key
+> - After that just build & run the project
+```shell
+go build -v -ldflags="-s -w" -o later
+./later
+```
 
 ### Usage:
 > Simply paste your link into the input field and watch it appear on the right side, with a single click on thumbnail you can that video in the other window

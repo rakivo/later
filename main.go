@@ -48,20 +48,15 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 	key := uuid.New()
 
 	video := Video{}.New(title, thumbnail, url, key)
+	vm.AddVideo(buck, key, video)
 	if err = DBaddVideo(db, []byte(buck), video); err != nil {
 		return nil, fmt.Errorf("Failed to put video in database: %v", err)
 	}
-	vm.AddVideo(buck, key, video)
 	return video, nil
 }
 
 /* TODO:
-   "/" POST function
-   maybe feature to extract thumbnails
    proper frontend
-   proper README
-   LICENSE
-   proper db integration
    etc
 */
 
