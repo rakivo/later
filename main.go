@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"fmt"
 	"log"
 	"time"
 	"net/http"
@@ -30,7 +31,22 @@ func checkErr(err error, exit bool) {
 	}
 }
 
-func addSomething(c *gin.Context) {
+func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string) (*Video, error) {
+	id, err := extractYouTubeID(url); if err != nil {
+		return nil, fmt.Errorf("failed to extract YouTube ID: %v", err)
+	}
+	title, err := getYouTubeTitle(client, id, apiKey); if err != nil {
+		return nil, fmt.Errorf("failed to get YouTube title: %v", err)
+	}
+
+	thumbnail := getYouTubeThumbnail(id)
+	key := uuid.New()
+	video := Video{}.New(title, thumbnail, key)
+	vm.AddVideo(buck, key, video)
+	if err = DBputVideo(db, []byte(buck), video); err != nil {
+		return nil, fmt.Errorf("failed to put video in database: %v", err)
+	}
+	return video, nil
 }
 
 /* TODO:
@@ -62,35 +78,39 @@ func main() {
 	r.Static("/static", "./static")
 	r.SetTrustedProxies(TrustedProxies)
 
-	id, err := extractYouTubeID(TEST_YT_URL); checkErr(err, false)
-
 	client := http.Client{ Timeout: 5 * time.Second }
-	title, err := getYouTubeTitle(&client, id, YT_API_KEY); checkErr(err, false)
+	vm := VideoManager{}.New()
 
-	thumbnail := getYouTubeThumbnail(id)
-
-	video := Video{}.New(title, thumbnail, uuid.New())
-
-	err = DBputVideo(&db, []byte(YT_BUCK), video)
-
-	*video, err = DBgetVideo(&db, []byte(YT_BUCK), video.key); if err == nil {
-		log.Println("------------------------")
-		log.Println(video.String())
-		log.Println("------------------------")
-	}
+	latestvideo := Video{}.New("", "", uuid.New())
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"PostAddr": "/",
 		})
 	})
-	r.POST("/", addSomething)
+	r.POST("/", func(c *gin.Context) {
+		latestvideo, err = addVideo(c, &db, vm, YT_BUCK, TEST_YT_URL, &client, YT_API_KEY)
+		// JUST FOR TEST:
+		*latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
+			log.Println("------DB GET VIDEO------")
+			log.Println(latestvideo.String())
+		} else {
+			log.Println("ERROR:", err)
+		}
+		ordervid, err := vm.GetVideo(YT_BUCK, 0); if err == nil {
+			log.Println("-----ORDER GET VIDEO----")
+			log.Println(ordervid.String())
+		} else {
+			log.Println("ERROR:", err)
+		}
+	})
+
+	latestvideo.Thumbnail = ";";
 
 	done := make(chan error, 1)
 	defer close(done)
 	go func() {
-		err := r.Run(ADDR)
-		if err != nil {
+		if err := r.Run(ADDR); err != nil {
 			done <- err
 		}
 	}()
