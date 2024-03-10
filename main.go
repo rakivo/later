@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"errors"
 	"net/http"
 	bolt "go.etcd.io/bbolt"
 	"github.com/google/uuid"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	ADDR = "127.0.0.1:6969"
+	ADDR    = "127.0.0.1:6969"
+	DB_FILE = "my.db"
 )
 
 var (
@@ -67,12 +69,23 @@ func main() {
 	err := env.Load(); checkErr(err, true)
 	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
 
-	db, err := bolt.Open("my.db", 0600, nil); if err != nil {
+	db, err := bolt.Open(DB_FILE, 0600, nil); if err != nil {
 		log.Fatal(err)
-		return;
+		return
 	}
 	defer db.Close()
 
+	vm := VideoManager{}.New()
+	if _, err = os.Stat(DB_FILE); err == nil {
+		log.Println("File %s exists, recovering..", DB_FILE)
+		if err = DBrecover(&db, &vm); err != nil {
+			log.Fatal(err)
+			return
+		}
+	} else if errors.Is(err, os.ErrNotExist) {
+		log.Println("File %s doesn't exist, creating..", DB_FILE)
+		return
+	}
 	gin.SetMode(gin.DebugMode)
 
 	r := gin.New()
@@ -83,7 +96,6 @@ func main() {
 	r.SetTrustedProxies(TrustedProxies)
 
 	client := http.Client{ Timeout: 5 * time.Second }
-	vm := VideoManager{}.New()
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
@@ -94,7 +106,8 @@ func main() {
 		url := c.PostForm("link")
 		log.Println("Catched url:", url)
 
-		latestvideo, err := addVideo(c, &db, vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
+		latestvideo, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
+		// JUST FOR DEBUGGING
 		*latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
 			log.Println("------DB GET VIDEO------")
 			log.Println(latestvideo.String())
@@ -103,13 +116,7 @@ func main() {
 		}
 
 		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
-		if len(kvs) == 0 {
-			log.Println("No videos found")
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"PostAddr": "/",
-				"Videos":   nil,
-			})
-		} else {
+		if err == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
 				"PostAddr": "/",
 				"Videos": KeyVids2Videos(kvs),

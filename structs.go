@@ -20,12 +20,16 @@ func (_ Video) New(Title string, Thumbnail string, key uuid.UUID) *Video {
 }
 
 func (v Video) String() string {
-	return fmt.Sprintf("Video{\n    Title: \t%s, \n    Thumbnail: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.key)
+	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.key)
 }
 
 type KeyVid struct {
 	key uuid.UUID
 	vid Video
+}
+
+func (kv KeyVid) String() string {
+	return fmt.Sprintf("KeyVid{\n    key: \t%s,\n    vid: \t%s    }", kv.key.String(), kv.vid.String())
 }
 
 func (_ KeyVid) New(key uuid.UUID, vid *Video) KeyVid {
@@ -48,11 +52,24 @@ type VideoManager struct {
 	sizes map[string]uint32
 }
 
-func (_ VideoManager) New() *VideoManager {
-	return &VideoManager {
+func (_ VideoManager) New() VideoManager {
+	return VideoManager {
 		order: make(map[string][]KeyVid),
 		sizes: make(map[string]uint32),
 	}
+}
+
+func (vm *VideoManager) String() string {
+	var result string
+	result += "VideoManager {\n"
+	for bucket, keyVids := range vm.order {
+		result += fmt.Sprintf("  Bucket: %s\n", bucket)
+		for i, keyVid := range keyVids {
+			result += fmt.Sprintf("    Index: %d, KeyVid: %v\n", i, keyVid)
+		}
+	}
+	result += "}\n"
+	return result
 }
 
 func (vm VideoManager) GetKeyVidsFromBucket(buck string) ([]KeyVid, error) {

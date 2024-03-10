@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"encoding/json"
 	bolt "go.etcd.io/bbolt"
 	"github.com/google/uuid"
@@ -22,6 +23,30 @@ func DBaddVideo(db **bolt.DB, bucket []byte, video *Video) error {
 			return fmt.Errorf("Error putting data: %v", err)
 		}
 		return nil
+	})
+}
+
+func DBrecover(db **bolt.DB, vm *VideoManager) error {
+	return (*db).View(func(tx *bolt.Tx) error {
+		return tx.ForEach(func(bucketName []byte, bucket *bolt.Bucket) error {
+			log.Printf("Recovering bucket: %s", string(bucketName))
+			var keyVids []KeyVid
+			bucket.ForEach(func(k, v []byte) error {
+				var video Video
+				if err := json.Unmarshal(v, &video); err != nil {
+					return fmt.Errorf("Error unmarshalling video: %v", err)
+				}
+				uuidKey, err := uuid.FromBytes(k); if err != nil {
+					return fmt.Errorf("Error converting key to UUID: %v", err)
+				}
+				keyVid := KeyVid{}.New(uuidKey, &video)
+				keyVids = append(keyVids, keyVid)
+				return nil
+			})
+			(*vm).order[string(bucketName)] = keyVids
+			(*vm).sizes[string(bucketName)] = uint32(len(keyVids))
+			return nil
+		})
 	})
 }
 
