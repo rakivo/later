@@ -31,20 +31,23 @@ func DBrecover(db **bolt.DB, vm *VideoManager) error {
 		return tx.ForEach(func(bucketName []byte, bucket *bolt.Bucket) error {
 			log.Printf("Recovering bucket: %s", string(bucketName))
 			var keyVids []KeyVid
+			size := 0
 			bucket.ForEach(func(k, v []byte) error {
 				var video Video
 				if err := json.Unmarshal(v, &video); err != nil {
 					return fmt.Errorf("Error unmarshalling video: %v", err)
 				}
+				log.Println("Recovered video:", video)
 				uuidKey, err := uuid.FromBytes(k); if err != nil {
 					return fmt.Errorf("Error converting key to UUID: %v", err)
 				}
 				keyVid := KeyVid{}.New(uuidKey, &video)
 				keyVids = append(keyVids, keyVid)
+				size++
 				return nil
 			})
 			(*vm).order[string(bucketName)] = keyVids
-			(*vm).sizes[string(bucketName)] = uint32(len(keyVids))
+			(*vm).sizes[string(bucketName)] = uint32(size)
 			return nil
 		})
 	})

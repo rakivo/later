@@ -20,7 +20,7 @@ const (
 
 var (
 	TrustedProxies = []string{
-		"127.0.0.1",
+		"127.0.0.1", "localhost:6969",
 	}
 )
 
@@ -47,7 +47,7 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 	thumbnail := getYouTubeThumbnail(id)
 	key := uuid.New()
 
-	video := Video{}.New(title, thumbnail, key)
+	video := Video{}.New(title, thumbnail, url, key)
 	if err = DBaddVideo(db, []byte(buck), video); err != nil {
 		return nil, fmt.Errorf("Failed to put video in database: %v", err)
 	}
@@ -76,14 +76,14 @@ func main() {
 	defer db.Close()
 
 	vm := VideoManager{}.New()
-	if _, err = os.Stat(DB_FILE); err == nil {
-		log.Println("File %s exists, recovering..", DB_FILE)
+	if _, err = os.Stat(DB_FILE); errors.Is(err, os.ErrExist) {
+		log.Println("DB file exists, recovering..", DB_FILE)
 		if err = DBrecover(&db, &vm); err != nil {
 			log.Fatal(err)
 			return
 		}
 	} else if errors.Is(err, os.ErrNotExist) {
-		log.Println("File %s doesn't exist, creating..", DB_FILE)
+		log.Println("DB File s doesn't exist, creating..", DB_FILE)
 		return
 	}
 	gin.SetMode(gin.DebugMode)
@@ -98,28 +98,40 @@ func main() {
 	client := http.Client{ Timeout: 5 * time.Second }
 
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"PostAddr": "/",
-		})
+		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
+		if err == nil {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"PostAddr": "/",
+				"Videos": KeyVids2Videos(kvs),
+			})
+		} else {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"PostAddr": "/",
+			})
+		}
 	})
 	r.POST("/", func(c *gin.Context) {
 		url := c.PostForm("link")
 		log.Println("Catched url:", url)
 
-		latestvideo, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
+		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
 		// JUST FOR DEBUGGING
-		*latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
+		/**latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
 			log.Println("------DB GET VIDEO------")
 			log.Println(latestvideo.String())
 		} else {
 			log.Println("DB ERROR:", err)
-		}
+		}*/
 
 		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
 		if err == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
 				"PostAddr": "/",
 				"Videos": KeyVids2Videos(kvs),
+			})
+		} else {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"PostAddr": "/",
 			})
 		}
 	})

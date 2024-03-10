@@ -12,7 +12,6 @@ import (
 const (
 	YT_BUCK          = "YT_BUCKET"
 	YT_REGEXP        = `^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*`
-	TEST_YT_URL      = "https://youtu.be/LjrCckaHjB0?si=b_6nst1A-0qUaVl5"
 	YT_GET_TITLE     = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s"
 	YT_GET_THUMBNAIL = "https://img.youtube.com/vi/%s/hqdefault.jpg"
 )

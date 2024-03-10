@@ -8,19 +8,21 @@ import (
 type Video struct {
 	Title     string
 	Thumbnail string
+	Url       string
 	key       uuid.UUID
 }
 
-func (_ Video) New(Title string, Thumbnail string, key uuid.UUID) *Video {
+func (_ Video) New(Title string, Thumbnail string, Url string, key uuid.UUID) *Video {
 	return &Video {
 		Title,
 		Thumbnail,
+		Url,
 		key,
 	}
 }
 
 func (v Video) String() string {
-	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.key)
+	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s,\n    Url: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.Url, v.key)
 }
 
 type KeyVid struct {

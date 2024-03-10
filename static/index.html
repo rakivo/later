@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="static/index.css">
     <title>later</title>
 </head>
 <body>  
     <form action={{.PostAddr}} method="POST">
         <input type="text" id="link" name="link" placeholder="enter a link...">
-        <button type="submit">Send</button>
+        <button type="submit" id="submit-button">send</button>
     </form>
     <div id="video-list">
         {{range .Videos}}
             <div class="video-item">
-                <img src="{{.Thumbnail}}" alt="Video Thumbnail">
+                <img src="{{.Thumbnail}}" alt="Video Thumbnail" onclick="window.open({{.Url}})">
                 <p>{{.Title}}</p>
             </div>
         {{end}}
