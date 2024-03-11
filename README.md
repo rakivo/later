@@ -1,4 +1,4 @@
-## The [later](https://github.com/rakivo/later) is lightweight, convenient and self-hosted tool that allows you to keep all the videos you wanna watch soon without the need to open a lot of unnecessary tabs in your browser.
+### The [later](https://github.com/rakivo/later) is lightweight, convenient and self-hosted tool that allows you to keep all the videos you wanna watch soon without the need to open a lot of unnecessary tabs in your browser.
 
 ### To run:
 > - Clone and cd the [later repo](https://github.com/rakivo/later)
@@ -27,3 +27,9 @@ go build -v -ldflags="-s -w" -o later
 >    get rid of using gin
 
 > 3. gif preview
+
+#### References of used dependencies:
+> gin      - https://github.com/gin-gonic/gin
+> uuid     - https://github.com/google/uuid
+> bbolt    - https://github.com/etcd-io/bbolt
+> godotenv - https://github.com/joho/godotenv

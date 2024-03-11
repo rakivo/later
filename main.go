@@ -95,7 +95,7 @@ func main() {
 	r.Static("/static", "./static")
 	r.SetTrustedProxies(TrustedProxies)
 
-	log.Println("Starting server on: http://127.0.0.1:6969/")
+	log.Println("Starting server on: http://" + ADDR)
 
 	r.GET("/", func(c *gin.Context) {
 		videos, err := vm.GetVideosFromBucket(YT_BUCK);
