@@ -17,11 +17,9 @@ const (
 	DB_FILE = "my.db"
 )
 
-var (
-	TrustedProxies = []string{
-		"127.0.0.1", "localhost:6969",
-	}
-)
+var TrustedProxies = []string{
+	"127.0.0.1", "localhost:6969",
+}
 
 func checkErr(err error, exit bool) {
 	if err != nil {
@@ -50,6 +48,7 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 	video := Video{}.New(title, thumbnail, url, key)
 	log.Println("Adding video to the vm, video:", video)
 	(*vm).AddVideo(buck, key, video)
+
 	log.Println("Adding video to the db, video:", video)
 	if err = DBaddVideo(db, []byte(buck), video); err != nil {
 		return nil, fmt.Errorf("Failed to put video in database: %v", err)
@@ -117,6 +116,7 @@ func main() {
 		log.Println("Catched url:", url)
 
 		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
+
 		videos, err := vm.GetVideosFromBucket(YT_BUCK); checkErr(err, false)
 		if err == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
@@ -138,6 +138,5 @@ func main() {
 			done <- err
 		}
 	}()
-
 	checkErr(<-done, true)
 }

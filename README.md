@@ -21,16 +21,21 @@ go build -v -ldflags="-s -w" -o later
 > Simply paste your link into the input field and watch it appear on the right side, with a single click on thumbnail you can that video in the other window
 
 ### Future Plans:
-> 1. proper frontend
->    proper readme
+> 1.1 proper frontend
 
-> 2. get rid of using youtube api
->    get rid of using gin
+> 1.2  proper readme
 
-> 3. gif preview
+> 2.1 get rid of using youtube api
+
+> 2.2 get rid of using gin
+
+> 3.1 gif preview
 
 #### References of used dependencies:
 > gin      - https://github.com/gin-gonic/gin
+
 > uuid     - https://github.com/google/uuid
+
 > bbolt    - https://github.com/etcd-io/bbolt
+
 > godotenv - https://github.com/joho/godotenv

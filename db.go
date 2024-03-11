@@ -31,6 +31,7 @@ func DBrecover(db **bolt.DB, vm *VideoManager) error {
 		return tx.ForEach(func(bucketName []byte, bucket *bolt.Bucket) error {
 			bucketNameStr := string(bucketName)
 			log.Printf("Recovering bucket: %s", bucketNameStr)
+
 			var keyVids []KeyVid
 			var size uint32 = 0
 			bucket.ForEach(func(k, v []byte) error {
