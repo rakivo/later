@@ -2,11 +2,11 @@
 ##### The [later](https://github.com/rakivo/later) allows you to keep all the videos you wanna watch soon without the need to open a lot of unnecessary tabs in your browser.
 
 ### To run:
-> - Clone and cd the [later repo](https://github.com/rakivo/later)
+> - Clone and cd the [later repo.](https://github.com/rakivo/later)
 ```shell
 git clone --depth 1 https://github.com/rakivo/later && cd later
 ```
-> - Create a .env file with the following content::
+> - Create a .env file with the following content:
 ```txt
 YOUTUBE_API_KEY = "PUT YOUR API KEY BETWEEN THIS QUOTATION MARKS"
 ```
