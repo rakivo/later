@@ -1,4 +1,5 @@
-### The [later](https://github.com/rakivo/later) is lightweight, convenient and self-hosted tool that allows you to keep all the videos you wanna watch soon without the need to open a lot of unnecessary tabs in your browser.
+### The [later](https://github.com/rakivo/later) is lightweight, convenient and self-hosted tool.
+##### The [later](https://github.com/rakivo/later) allows you to keep all the videos you wanna watch soon without the need to open a lot of unnecessary tabs in your browser.
 
 ### To run:
 > - Clone and cd the [later repo](https://github.com/rakivo/later)
