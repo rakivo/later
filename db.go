@@ -29,9 +29,10 @@ func DBaddVideo(db **bolt.DB, bucket []byte, video *Video) error {
 func DBrecover(db **bolt.DB, vm *VideoManager) error {
 	return (*db).View(func(tx *bolt.Tx) error {
 		return tx.ForEach(func(bucketName []byte, bucket *bolt.Bucket) error {
-			log.Printf("Recovering bucket: %s", string(bucketName))
+			bucketNameStr := string(bucketName)
+			log.Printf("Recovering bucket: %s", bucketNameStr)
 			var keyVids []KeyVid
-			size := 0
+			var size uint32 = 0
 			bucket.ForEach(func(k, v []byte) error {
 				var video Video
 				if err := json.Unmarshal(v, &video); err != nil {
@@ -46,8 +47,8 @@ func DBrecover(db **bolt.DB, vm *VideoManager) error {
 				size++
 				return nil
 			})
-			(*vm).order[string(bucketName)] = keyVids
-			(*vm).sizes[string(bucketName)] = uint32(size)
+			(*vm).order[bucketNameStr] = keyVids
+			(*vm).sizes[bucketNameStr] = size
 			return nil
 		})
 	})

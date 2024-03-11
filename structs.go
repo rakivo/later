@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"github.com/google/uuid"
 )
 
@@ -76,21 +77,36 @@ func (vm *VideoManager) String() string {
 
 func (vm VideoManager) GetKeyVidsFromBucket(buck string) ([]KeyVid, error) {
 	if _, ok := vm.order[buck]; !ok {
-		return nil, fmt.Errorf("ERROR: No such bucket: %s", buck)
+		return nil, fmt.Errorf("No such bucket: %s", buck)
 	}
 	return vm.order[buck], nil
 }
 
+func (vm VideoManager) GetVideosFromBucket(buck string) ([]Video, error) {
+	log.Println("Getting video from bucket, vm.order: ", vm.order)
+	if _, ok := vm.order[buck]; !ok {
+		return nil, fmt.Errorf("No such bucket: %s", buck)
+	}
+	videos := make([]Video, vm.sizes[buck])
+	for i := range vm.order[buck] {
+		videos[i] = vm.order[buck][i].vid
+	}
+	return videos, nil
+}
+
 func (vm VideoManager) AddVideo(buck string, key uuid.UUID, video *Video) {
 	if _, ok := vm.order[buck]; !ok {
+		log.Println("Creating new bucket:", buck)
 		vm.order[buck] = make([]KeyVid, 0)
 	}
 	keyvid := KeyVid{}.New(key, video)
 	vm.order[buck] = append(vm.order[buck], keyvid)
 	vm.sizes[buck]++
+	log.Println("Added video: vm.order:", vm.order, "vm.sizes:", vm.sizes)
 }
 
 func (vm VideoManager) GetVideo(buck string, index uint32) (*Video, error) {
+	log.Println("Getting video:", vm.order)
 	if _, ok := vm.order[buck]; !ok {
 		return nil, fmt.Errorf("No such bucket: %s", buck)
 	}

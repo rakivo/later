@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"errors"
 	"net/http"
 	bolt "go.etcd.io/bbolt"
 	"github.com/google/uuid"
@@ -35,10 +34,11 @@ func checkErr(err error, exit bool) {
 
 // get video's id, title, thumbnail; add created video to db and vm
 func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string) (*Video, error) {
+	log.Println("Extracting id from url:", url)
 	id, err := extractYouTubeID(url); if err != nil {
 		return nil, fmt.Errorf("Failed to extract YouTube ID: %v", err)
 	}
-	log.Println("Extracted id:", id)
+	log.Println("Extracting title from id:", id)
 	title, err := getYouTubeTitle(client, id, apiKey); if err != nil {
 		return nil, fmt.Errorf("failed to get YouTube title: %v", err)
 	}
@@ -48,7 +48,9 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 	key := uuid.New()
 
 	video := Video{}.New(title, thumbnail, url, key)
-	vm.AddVideo(buck, key, video)
+	log.Println("Adding video to the vm, video:", video)
+	(*vm).AddVideo(buck, key, video)
+	log.Println("Adding video to the db, video:", video)
 	if err = DBaddVideo(db, []byte(buck), video); err != nil {
 		return nil, fmt.Errorf("Failed to put video in database: %v", err)
 	}
@@ -57,12 +59,18 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 
 /* TODO:
    proper frontend
+   proper readme
+   get rid of using youtube api
+   gif preview
    etc
 */
 
 func main() {
 	err := env.Load(); checkErr(err, true)
 	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetOutput(os.Stdout)
 
 	db, err := bolt.Open(DB_FILE, 0600, nil); if err != nil {
 		log.Fatal(err)
@@ -71,17 +79,12 @@ func main() {
 	defer db.Close()
 
 	vm := VideoManager{}.New()
-	if _, err = os.Stat(DB_FILE); errors.Is(err, os.ErrExist) {
-		log.Println("DB file exists, recovering..", DB_FILE)
-		if err = DBrecover(&db, &vm); err != nil {
-			log.Fatal(err)
-			return
-		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Println("DB File s doesn't exist, creating..", DB_FILE)
+	if err = DBrecover(&db, &vm); err != nil {
+		log.Fatal(err)
 		return
 	}
-	gin.SetMode(gin.DebugMode)
+
+	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
 	r.Use(gin.Logger())
@@ -90,14 +93,12 @@ func main() {
 	r.Static("/static", "./static")
 	r.SetTrustedProxies(TrustedProxies)
 
-	client := http.Client{ Timeout: 5 * time.Second }
-
 	r.GET("/", func(c *gin.Context) {
-		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
+		videos, err := vm.GetVideosFromBucket(YT_BUCK);
 		if err == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
 				"PostAddr": "/",
-				"Videos": KeyVids2Videos(kvs),
+				"Videos": videos,
 			})
 		} else {
 			c.HTML(http.StatusOK, "index.html", gin.H{
@@ -105,24 +106,18 @@ func main() {
 			})
 		}
 	})
+
+	client := http.Client{ Timeout: 5 * time.Second }
 	r.POST("/", func(c *gin.Context) {
 		url := c.PostForm("link")
 		log.Println("Catched url:", url)
 
 		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
-		// JUST FOR DEBUGGING
-		/**latestvideo, err = DBgetVideo(&db, []byte(YT_BUCK), (*latestvideo).key); if err == nil {
-			log.Println("------DB GET VIDEO------")
-			log.Println(latestvideo.String())
-		} else {
-			log.Println("DB ERROR:", err)
-		}*/
-
-		kvs, err := vm.GetKeyVidsFromBucket(YT_BUCK); checkErr(err, false)
+		videos, err := vm.GetVideosFromBucket(YT_BUCK); checkErr(err, false)
 		if err == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
 				"PostAddr": "/",
-				"Videos": KeyVids2Videos(kvs),
+				"Videos": videos,
 			})
 		} else {
 			c.HTML(http.StatusOK, "index.html", gin.H{
@@ -133,6 +128,7 @@ func main() {
 
 	done := make(chan error, 1)
 	defer close(done)
+
 	go func() {
 		if err := r.Run(ADDR); err != nil {
 			done <- err
