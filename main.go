@@ -21,21 +21,13 @@ var TrustedProxies = []string{
 	"127.0.0.1", "localhost:6969",
 }
 
-func checkErr(err error, exit bool) {
-	if err != nil {
-		log.Println("ERROR:", err)
-		if exit {
-			os.Exit(1)
-		}
-	}
-}
-
 // get video's id, title, thumbnail; add created video to db and vm
 func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string) (*Video, error) {
 	log.Println("Extracting id from url:", url)
 	id, err := extractYouTubeID(url); if err != nil {
 		return nil, fmt.Errorf("Failed to extract YouTube ID: %v", err)
 	}
+
 	log.Println("Extracting title from id:", id)
 	title, err := getYouTubeTitle(client, id, apiKey); if err != nil {
 		return nil, fmt.Errorf("failed to get YouTube title: %v", err)
@@ -67,7 +59,7 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 */
 
 func main() {
-	err := env.Load(); checkErr(err, true)
+	err := env.Load(); checkErr_(err, true)
 	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -97,17 +89,7 @@ func main() {
 	log.Println("Starting server on: http://" + ADDR)
 
 	r.GET("/", func(c *gin.Context) {
-		videos, err := vm.GetVideosFromBucket(YT_BUCK);
-		if err == nil {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"PostAddr": "/",
-				"Videos": videos,
-			})
-		} else {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"PostAddr": "/",
-			})
-		}
+		checkGetAndRender_(c, &vm, YT_BUCK)
 	})
 
 	client := http.Client{ Timeout: 5 * time.Second }
@@ -115,19 +97,8 @@ func main() {
 		url := c.PostForm("link")
 		log.Println("Catched url:", url)
 
-		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr(err, false)
-
-		videos, err := vm.GetVideosFromBucket(YT_BUCK); checkErr(err, false)
-		if err == nil {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"PostAddr": "/",
-				"Videos": videos,
-			})
-		} else {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"PostAddr": "/",
-			})
-		}
+		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr_(err, false)
+		checkGetAndRender_(c, &vm, YT_BUCK)
 	})
 
 	done := make(chan error, 1)
@@ -138,5 +109,28 @@ func main() {
 			done <- err
 		}
 	}()
-	checkErr(<-done, true)
+	checkErr_(<-done, true)
+}
+
+func checkErr_(err error, exit bool) {
+	if err != nil {
+		log.Println("ERROR:", err)
+		if exit {
+			os.Exit(1)
+		}
+	}
+}
+
+func checkGetAndRender_(c *gin.Context, vm *VideoManager, buck string) {
+	videos, err := vm.GetVideosFromBucket(buck); checkErr_(err, false)
+	if err == nil {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"PostAddr": "/",
+			"Videos": videos,
+		})
+	} else {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"PostAddr": "/",
+		})
+	}
 }
