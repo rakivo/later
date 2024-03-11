@@ -18,7 +18,8 @@ go build -v -ldflags="-s -w" -o later
 ```
 
 ### Usage:
-> Simply paste your link into the input field and watch it appear on the right side, with a single click on thumbnail you can that video in the other window
+> Simply paste your link into the input field, click on the submit button and watch it appear on the right side
+> With a single click on the thumbnail you can open that video in the other window
 
 ### Future Plans:
 > 1.1 proper frontend
