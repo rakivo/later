@@ -58,11 +58,13 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 }
 
 /* TODO:
-   proper frontend
-   proper readme
-   get rid of using youtube api
-   gif preview
-   etc
+   1. proper frontend
+	  proper readme
+
+   2. get rid of using youtube api
+	  get rid of using gin
+
+   3. gif preview
 */
 
 func main() {
@@ -92,6 +94,8 @@ func main() {
 	r.LoadHTMLGlob("static/*")
 	r.Static("/static", "./static")
 	r.SetTrustedProxies(TrustedProxies)
+
+	log.Println("Starting server on: http://127.0.0.1:6969/")
 
 	r.GET("/", func(c *gin.Context) {
 		videos, err := vm.GetVideosFromBucket(YT_BUCK);

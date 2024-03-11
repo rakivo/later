@@ -20,4 +20,10 @@ go build -v -ldflags="-s -w" -o later
 > Simply paste your link into the input field and watch it appear on the right side, with a single click on thumbnail you can that video in the other window
 
 ### Future Plans:
-> I plan to expand support beyond just [YouTube](https://www.youtube.com/) videos to include other platforms and content types.
+> 1. proper frontend
+>    proper readme
+
+> 2. get rid of using youtube api
+>    get rid of using gin
+
+> 3. gif preview
