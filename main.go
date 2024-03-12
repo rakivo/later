@@ -17,10 +17,6 @@ const (
 	DB_FILE = "my.db"
 )
 
-var TrustedProxies = []string{
-	"127.0.0.1", "localhost:6969",
-}
-
 // get video's id, title, thumbnail; add created video to db and vm
 func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string, dbChan chan DBreq) (*Video, error) {
 	log.Println("Extracting id from url:", url)
@@ -82,7 +78,7 @@ func main() {
 	r.Use(gin.Recovery())
 	r.LoadHTMLGlob("static/*")
 	r.Static("/static", "./static")
-	r.SetTrustedProxies(TrustedProxies)
+	r.SetTrustedProxies("127.0.0.1")
 
 	log.Println("Starting server on: http://" + ADDR)
 
