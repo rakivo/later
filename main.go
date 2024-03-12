@@ -22,7 +22,7 @@ var TrustedProxies = []string{
 }
 
 // get video's id, title, thumbnail; add created video to db and vm
-func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string) (*Video, error) {
+func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url string, client *http.Client, apiKey string, dbChan chan DBreq) (*Video, error) {
 	log.Println("Extracting id from url:", url)
 	id, err := extractYouTubeID(url); if err != nil {
 		return nil, fmt.Errorf("Failed to extract YouTube ID: %v", err)
@@ -35,16 +35,14 @@ func addVideo(c *gin.Context, db **bolt.DB, vm *VideoManager, buck string, url s
 	log.Println("Extracted title:", title)
 
 	thumbnail := getYouTubeThumbnail(id)
-	key := uuid.New()
 
+	key := uuid.New()
 	video := Video{}.New(title, thumbnail, url, key)
 	log.Println("Adding video to the vm, video:", video)
 	(*vm).AddVideo(buck, key, video)
 
 	log.Println("Adding video to the db, video:", video)
-	if err = DBaddVideo(db, []byte(buck), video); err != nil {
-		return nil, fmt.Errorf("Failed to put video in database: %v", err)
-	}
+	dbChan <- DBreq{}.New([]byte(buck), video)
 	return video, nil
 }
 
@@ -88,28 +86,30 @@ func main() {
 
 	log.Println("Starting server on: http://" + ADDR)
 
+	client := http.Client{ Timeout: 5 * time.Second }
+	dbChan := make(chan DBreq) // channel to send requests to the DB
+
+	go func() {
+		for req := range dbChan {
+			err := DBaddVideo(&db, []byte(req.Bucket), req.Video)
+			if err != nil {
+				log.Printf("Failed to put video in database: %v", err)
+			}
+		}
+	}()
+
 	r.GET("/", func(c *gin.Context) {
 		checkGetAndRender_(c, &vm, YT_BUCK)
 	})
-
-	client := http.Client{ Timeout: 5 * time.Second }
 	r.POST("/", func(c *gin.Context) {
 		url := c.PostForm("link")
 		log.Println("Catched url:", url)
 
-		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY); checkErr_(err, false)
-		checkGetAndRender_(c, &vm, YT_BUCK)
+		_, err := addVideo(c, &db, &vm, YT_BUCK, url, &client, YT_API_KEY, dbChan); checkErr_(err, false)
+		checkGetAndRender_(c, &vm, YT_BUCK); checkErr_(err, false)
 	})
 
-	done := make(chan error, 1)
-	defer close(done)
-
-	go func() {
-		if err := r.Run(ADDR); err != nil {
-			done <- err
-		}
-	}()
-	checkErr_(<-done, true)
+	checkErr_(r.Run(ADDR), true)
 }
 
 func checkErr_(err error, exit bool) {
@@ -122,7 +122,7 @@ func checkErr_(err error, exit bool) {
 }
 
 func checkGetAndRender_(c *gin.Context, vm *VideoManager, buck string) {
-	videos, err := vm.GetVideosFromBucket(buck); checkErr_(err, false)
+	videos, err := vm.GetVideosFromBucket(buck);
 	if err == nil {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"PostAddr": "/",

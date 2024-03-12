@@ -23,7 +23,7 @@ func (_ Video) New(Title string, Thumbnail string, Url string, key uuid.UUID) *V
 }
 
 func (v Video) String() string {
-	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s,\n    Url: \t%s, \n    Key: \t%s\n}", v.Title, v.Thumbnail, v.Url, v.key)
+	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s,\n    Url: \t%s, \n}", v.Title, v.Thumbnail, v.Url)
 }
 
 type KeyVid struct {
@@ -32,7 +32,7 @@ type KeyVid struct {
 }
 
 func (kv KeyVid) String() string {
-	return fmt.Sprintf("KeyVid{\n    key: \t%s,\n    vid: \t%s    }", kv.key.String(), kv.vid.String())
+	return fmt.Sprintf("KeyVid{\n    key: \t-,\n    vid: \t%s    }", kv.vid.String())
 }
 
 func (_ KeyVid) New(key uuid.UUID, vid *Video) KeyVid {
@@ -77,7 +77,7 @@ func (vm *VideoManager) String() string {
 
 func (vm VideoManager) GetKeyVidsFromBucket(buck string) ([]KeyVid, error) {
 	if _, ok := vm.order[buck]; !ok {
-		return nil, fmt.Errorf("No such bucket: %s", buck)
+		return nil, fmt.Errorf("In GetKeyVidsFromBucket: No such bucket: %s", buck)
 	}
 	return vm.order[buck], nil
 }
@@ -85,7 +85,7 @@ func (vm VideoManager) GetKeyVidsFromBucket(buck string) ([]KeyVid, error) {
 func (vm VideoManager) GetVideosFromBucket(buck string) ([]Video, error) {
 	log.Println("Getting video from bucket, vm.order: ", vm.order)
 	if _, ok := vm.order[buck]; !ok {
-		return nil, fmt.Errorf("No such bucket: %s", buck)
+		return nil, fmt.Errorf("In GetVideosFromBucket: No such bucket: %s", buck)
 	}
 	videos := make([]Video, vm.sizes[buck])
 	for i := range vm.order[buck] {
@@ -108,13 +108,25 @@ func (vm VideoManager) AddVideo(buck string, key uuid.UUID, video *Video) {
 func (vm VideoManager) GetVideo(buck string, index uint32) (*Video, error) {
 	log.Println("Getting video:", vm.order)
 	if _, ok := vm.order[buck]; !ok {
-		return nil, fmt.Errorf("No such bucket: %s", buck)
+		return nil, fmt.Errorf("In GetVideo: No such bucket: %s", buck)
 	}
 	size := vm.sizes[buck]
 	if index > size {
 		return nil, fmt.Errorf("No such video with index: %d, size of slice with bucket %s, is %d", index, buck, size)
 	}
 	return &vm.order[buck][index].vid, nil
+}
+
+type DBreq struct {
+	Bucket []byte
+	Video  *Video
+}
+
+func (_ DBreq) New(Bucket []byte, Video *Video) DBreq {
+	return DBreq{
+		Bucket,
+		Video,
+	}
 }
 
 type YouTubeSnippet struct {
