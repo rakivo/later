@@ -29,13 +29,9 @@ go build -v -ldflags="-s -w" -o later
 
 > 2.1 get rid of using youtube api
 
-> 2.2 get rid of using gin
-
 > 3.1 gif preview
 
 #### References of used dependencies:
-> gin      - https://github.com/gin-gonic/gin
-
 > uuid     - https://github.com/google/uuid
 
 > bbolt    - https://github.com/etcd-io/bbolt
