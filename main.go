@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 	"net/http"
+	"html/template"
 	bolt "go.etcd.io/bbolt"
 	"github.com/google/uuid"
-	"github.com/gin-gonic/gin"
 	env "github.com/joho/godotenv"
 )
 
@@ -19,7 +19,6 @@ const (
 
 // get video's id, title, thumbnail; add created video to db and vm
 func addVideo (
-	c *gin.Context,
 	db **bolt.DB,
 	vm *VideoManager,
 	buck string,
@@ -56,7 +55,6 @@ func addVideo (
 	  proper readme
 
    2. get rid of using youtube api
-	  get rid of using gin
 
    3. gif preview
 */
@@ -80,15 +78,6 @@ func main() {
 		return
 	}
 
-	gin.SetMode(gin.ReleaseMode)
-
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-	r.LoadHTMLGlob("static/*")
-	r.Static("/static", "./static")
-	r.SetTrustedProxies([]string{ADDR})
-
 	log.Println("Starting server on: http://" + ADDR)
 
 	client := http.Client{ Timeout: 5 * time.Second }
@@ -96,28 +85,31 @@ func main() {
 
 	go func() {
 		for req := range dbChan {
-			err := DBaddVideo(&db, []byte(req.Bucket), req.Video)
-			if err != nil {
+			if err := DBaddVideo(&db, []byte(req.Bucket), req.Video)
+			err != nil {
 				log.Printf("Failed to put video in database: %v", err)
 			}
 		}
 	}()
 
-	r.GET("/", func(c *gin.Context) {
-		checkGetAndRender_(c, &vm, YT_BUCK)
-	})
-	r.POST("/", func(c *gin.Context) {
-		url := c.PostForm("link")
-		log.Println("Catched url:", url)
+	tmpl, err := template.ParseFiles("static/index.html"); checkErr_(err, true)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			url := r.FormValue("link")
+			log.Println("Catched url:", url)
 
-		_, err := addVideo(
-			c, &db,
-			&vm, YT_BUCK,
-			url, &client,
-			YT_API_KEY, dbChan); checkErr_(err, false)
-		checkGetAndRender_(c, &vm, YT_BUCK); checkErr_(err, false)
+			_, err := addVideo(
+				&db,
+				&vm, YT_BUCK,
+				url, &client,
+				YT_API_KEY, dbChan); checkErr_(err, false)
+			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK); checkErr_(err, false)
+		} else {
+			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK)
+		}
 	})
-	checkErr_(r.Run(ADDR), true)
+	checkErr_(http.ListenAndServe(ADDR, nil), true)
 }
 
 func checkErr_(err error, exit bool) {
@@ -129,16 +121,27 @@ func checkErr_(err error, exit bool) {
 	}
 }
 
-func checkGetAndRender_(c *gin.Context, vm *VideoManager, buck string) {
+func checkGetAndRender_(tmpl **template.Template, w *http.ResponseWriter, vm *VideoManager, buck string) {
 	videos, err := vm.GetVideosFromBucket(buck);
 	if err == nil {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"PostAddr": "/",
-			"Videos": videos,
-		})
+		if err = (*tmpl).Execute(*w, struct {
+			PostAddr string
+			Videos []Video
+		} {
+			PostAddr: "/",
+			Videos: videos,
+		}); err != nil {
+			http.Error(*w, err.Error(), http.StatusInternalServerError)
+		}
 	} else {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"PostAddr": "/",
-		})
+		if err = (*tmpl).Execute(*w, struct {
+			PostAddr string
+			Videos []Video
+		} {
+			PostAddr: "/",
+			Videos: []Video{},
+		}); err != nil {
+			http.Error(*w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
