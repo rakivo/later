@@ -13,7 +13,11 @@ type Video struct {
 	key       uuid.UUID
 }
 
-func (_ Video) New(Title string, Thumbnail string, Url string, key uuid.UUID) *Video {
+func (_ Video) New(
+	Title string,
+	Thumbnail string,
+	Url string,
+	key uuid.UUID) *Video {
 	return &Video {
 		Title,
 		Thumbnail,
@@ -23,7 +27,8 @@ func (_ Video) New(Title string, Thumbnail string, Url string, key uuid.UUID) *V
 }
 
 func (v Video) String() string {
-	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s,\n    Url: \t%s, \n}", v.Title, v.Thumbnail, v.Url)
+	return fmt.Sprintf("Video{\n    Title: \t%s,\n    Thumbnail: \t%s,\n    Url: \t%s, \n}",
+								  v.Title,          v.Thumbnail,          v.Url)
 }
 
 type KeyVid struct {
@@ -112,7 +117,8 @@ func (vm VideoManager) GetVideo(buck string, index uint32) (*Video, error) {
 	}
 	size := vm.sizes[buck]
 	if index > size {
-		return nil, fmt.Errorf("No such video with index: %d, size of slice with bucket %s, is %d", index, buck, size)
+		return nil, fmt.Errorf("No such video with index: %d, size of slice with bucket %s, is %d",
+														index,                         buck,  size)
 	}
 	return &vm.order[buck][index].vid, nil
 }
