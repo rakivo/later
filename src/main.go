@@ -72,18 +72,14 @@ func main() {
 	vm := VideoManager{}.New()
 	y, n := checkArgs_(os.Args, len(os.Args))
 	if y {
-		err := DBrecover(&db, &vm); checkErr_(err, true)
+		checkErr_(DBrecover(&db, &vm), true)
 	} else if !y && !n {
 		if ask(bufio.NewReader(os.Stdin)) {
-			DBrecover(&db, &vm); checkErr_(err, true)
+			checkErr_(DBrecover(&db, &vm), true)
 		}
 	}
 
-	fmt.Println("Starting server on: http://" + ADDR)
-
-	client := http.Client{ Timeout: 5 * time.Second }
 	dbChan := make(chan DBreq) // channel to send requests to the DB
-
 	go func() {
 		for req := range dbChan {
 			if err := DBaddVideo(&db, []byte(req.Bucket), req.Video)
@@ -93,18 +89,19 @@ func main() {
 		}
 	}()
 
+	fmt.Println("Starting server on: http://" + ADDR)
+
+	client := http.Client{ Timeout: 5 * time.Second }
 	tmpl, err := template.ParseFiles(LATER_DIR + "static/index.html"); checkErr_(err, true)
+
 	http.Handle(LATER_DIR + "/static/", http.StripPrefix(LATER_DIR + "/static/", http.FileServer(http.Dir(LATER_DIR + "/static"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			url := r.FormValue("link")
 			log.Println("Catched url:", url)
 
-			_, err := addVideo(
-				&db,
-				&vm, YT_BUCK,
-				url, &client,
-				YT_API_KEY, dbChan); checkErr_(err, false)
+			_, err := addVideo(&db, &vm, YT_BUCK, url, &client, YT_API_KEY, dbChan);
+			checkErr_(err, false)
 			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK); checkErr_(err, false)
 		} else {
 			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK)
