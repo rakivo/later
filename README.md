@@ -11,11 +11,11 @@ git clone --depth 1 https://github.com/rakivo/later && cd later
 ##### For Linux users:
 > Add ```LATER_YOUTUBE_API_KEY``` to your ~/.bashrc and set it to your actual YouTube API key
 
-> You can optionally run ./scripts/linuxsetpaths.sh. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it. Fun fact: To let your cmd know that you've updated ~/.bashrc file run ```source ~/.bashrc```
+> You can optionally run ```./scripts/linuxsetpaths.sh```. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it. Fun fact: To let your cmd know that you've updated ~/.bashrc file run ```source ~/.bashrc```
 ##### For Windows users:
 > Add ```LATER_YOUTUBE_API_KEY``` to your PATH variables and set it to your actual YouTube API key
 
-> You can optionally try running ./scripts/windowspaths.bat. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
+> You can optionally try running ```./scripts/windowspaths.bat```. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
 
 #### Example of set variables from my ~/.bashrc:
 ```shell
