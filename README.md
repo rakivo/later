@@ -9,13 +9,16 @@ git clone --depth 1 https://github.com/rakivo/later && cd later
 > - You need to obtain free [YouTube Data API v3 api key](https://developers.google.com/youtube/v3), follow this [guide from Google](https://developers.google.com/youtube/v3/getting-started). This is needed because there's no way(AFAIK) to get the title of a YT video without an API key
 
 ##### For Linux users:
-> Once you've added the key to your ~/.bashrc, you can optionally execute ./linuxsetpaths.sh. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it.
+> Add ```LATER_YOUTUBE_API_KEY``` to your ~/.bashrc and set it to your actual YouTube API key
+> You can optionally execute ./linuxsetpaths.sh. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it. Fun fact: To let your cmd know that you've updated ~/.bashrc file run ```source ~/.bashrc```
 ##### For Windows users:
-> Once you've added "LATER_YOUTUBE_API_KEY" (as well) to your PATH variables and set it to your YT API key, you can optionally try running windowspaths.bat. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
+> Add ```LATER_YOUTUBE_API_KEY``` to your PATH variables and set it to your actual YouTube API key
+> You can optionally try running windowspaths.bat. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
 
-> Example of set variable:
+> Example of set variables from my ~/.bashrc:
 ```shell
-YOUTUBE_API_KEY = "YOUR API KEY HERE"
+export PATH=$PATH:/home/rakivo/Coding/later
+export LATER_PROJECT_DIR="/home/rakivo/Coding/later/"
 ```
 
 > And then finally build and run the project:

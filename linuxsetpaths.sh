@@ -14,5 +14,3 @@ else
   echo "export LATER_PROJECT_DIR=\"$(pwd)/\"" >> ~/.bashrc
   echo "Successfully added LATER_PROJECT_DIR"
 fi
-
-source ~/.bashrc
