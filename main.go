@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"bufio"
+	"strings"
 	"net/http"
 	"html/template"
 	bolt "go.etcd.io/bbolt"
@@ -73,9 +75,8 @@ func main() {
 	defer db.Close()
 
 	vm := VideoManager{}.New()
-	if err = DBrecover(&db, &vm); err != nil {
-		log.Fatal(err)
-		return
+	if ask() {
+		err := DBrecover(&db, &vm); checkErr_(err, true)
 	}
 
 	log.Println("Starting server on: http://" + ADDR)
@@ -110,6 +111,38 @@ func main() {
 		}
 	})
 	checkErr_(http.ListenAndServe(ADDR, nil), true)
+}
+
+func ask() bool {
+	ior := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Printf("Recover videos from previous sessions? [y/n] ")
+		ioans, err := ior.ReadString('\n'); if err != nil {
+			fmt.Println("ERROR reading input:", err)
+			continue
+		}
+		ioans = strings.TrimSpace(ioans)
+		if len(ioans) == 0 {
+			fmt.Println("Enter y or n")
+			continue
+		}
+		fields := strings.Fields(ioans)
+		if len(fields) > 1 {
+			fmt.Println("Enter y or n")
+			continue
+		}
+
+		ifY := strings.Compare(fields[0], "y")
+		ifN := strings.Compare(fields[0], "n")
+		if ifY != 0 && ifN != 0 {
+			fmt.Println("Enter y or n")
+			continue
+		} else if ifY == 0 {
+			return true
+		} else if ifN == 0 {
+			return false
+		}
+	}
 }
 
 func checkErr_(err error, exit bool) {
