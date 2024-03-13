@@ -15,13 +15,13 @@ git clone --depth 1 https://github.com/rakivo/later && cd later
 > Add ```LATER_YOUTUBE_API_KEY``` to your PATH variables and set it to your actual YouTube API key
 > You can optionally try running windowspaths.bat. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
 
-> Example of set variables from my ~/.bashrc:
+#### Example of set variables from my ~/.bashrc:
 ```shell
 export PATH=$PATH:/home/rakivo/Coding/later
 export LATER_PROJECT_DIR="/home/rakivo/Coding/later/"
 ```
 
-> And then finally build and run the project:
+####  And then finally build and run the project:
 ```shell
 go build -v -ldflags="-s -w" -o later
 ./later
