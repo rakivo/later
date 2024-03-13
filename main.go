@@ -11,7 +11,6 @@ import (
 	"html/template"
 	bolt "go.etcd.io/bbolt"
 	"github.com/google/uuid"
-	env "github.com/joho/godotenv"
 )
 
 const (
@@ -62,24 +61,25 @@ func addVideo (
 */
 
 func main() {
-	err := env.Load(); checkErr_(err, true)
-	YT_API_KEY := os.Getenv("YOUTUBE_API_KEY")
+	YT_API_KEY := os.Getenv("LATER_YOUTUBE_API_KEY")
+	LATER_DIR  := os.Getenv("LATER_PROJECT_DIR")
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.SetOutput(os.Stdout)
-
-	db, err := bolt.Open(DB_FILE, 0600, nil); if err != nil {
+	db, err := bolt.Open(LATER_DIR + DB_FILE, 0600, nil); if err != nil {
 		log.Fatal(err)
 		return
-	}
-	defer db.Close()
+	}; defer db.Close()
 
 	vm := VideoManager{}.New()
-	if ask() {
+	y, n := checkArgs_(os.Args, len(os.Args))
+	if y {
 		err := DBrecover(&db, &vm); checkErr_(err, true)
+	} else if !y && !n {
+		if ask(bufio.NewReader(os.Stdin)) {
+			DBrecover(&db, &vm); checkErr_(err, true)
+		}
 	}
 
-	log.Println("Starting server on: http://" + ADDR)
+	fmt.Println("Starting server on: http://" + ADDR)
 
 	client := http.Client{ Timeout: 5 * time.Second }
 	dbChan := make(chan DBreq) // channel to send requests to the DB
@@ -93,8 +93,8 @@ func main() {
 		}
 	}()
 
-	tmpl, err := template.ParseFiles("static/index.html"); checkErr_(err, true)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	tmpl, err := template.ParseFiles(LATER_DIR + "static/index.html"); checkErr_(err, true)
+	http.Handle(LATER_DIR + "/static/", http.StripPrefix(LATER_DIR + "/static/", http.FileServer(http.Dir(LATER_DIR + "/static"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			url := r.FormValue("link")
@@ -113,36 +113,21 @@ func main() {
 	checkErr_(http.ListenAndServe(ADDR, nil), true)
 }
 
-func ask() bool {
-	ior := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Printf("Recover videos from previous sessions? [y/n] ")
-		ioans, err := ior.ReadString('\n'); if err != nil {
-			fmt.Println("ERROR reading input:", err)
-			continue
-		}
-		ioans = strings.TrimSpace(ioans)
-		if len(ioans) == 0 {
-			fmt.Println("Enter y or n")
-			continue
-		}
-		fields := strings.Fields(ioans)
-		if len(fields) > 1 {
-			fmt.Println("Enter y or n")
-			continue
-		}
-
-		ifY := strings.Compare(fields[0], "y")
-		ifN := strings.Compare(fields[0], "n")
-		if ifY != 0 && ifN != 0 {
-			fmt.Println("Enter y or n")
-			continue
-		} else if ifY == 0 {
-			return true
-		} else if ifN == 0 {
-			return false
-		}
+func checkArgs_(args []string, argsLen int) (bool, bool) {
+	ifY := false
+	ifN := false
+	if argsLen == 2 {
+		trimmed := strings.TrimSpace(args[1])
+		ifY = strings.Compare(trimmed, "y") == 0
+		ifN = strings.Compare(trimmed, "n") == 0
+		return ifY, ifN
+	}; if argsLen >= 2 {
+		fmt.Println("Usage: ./later <y/n>")
+		fmt.Println("y means recover videos from the previous sessions")
+		fmt.Println("n means do not")
+		fmt.Println("By the way, these flags are optional")
 	}
+	return false, false
 }
 
 func checkErr_(err error, exit bool) {
@@ -175,6 +160,37 @@ func checkGetAndRender_(tmpl **template.Template, w *http.ResponseWriter, vm *Vi
 			Videos: []Video{},
 		}); err != nil {
 			http.Error(*w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+func ask(ior *bufio.Reader) bool {
+	for {
+		fmt.Printf("Recover videos from previous sessions? [y/n] ")
+		ioans, err := ior.ReadString('\n'); if err != nil {
+			fmt.Println("ERROR reading input:", err)
+			continue
+		}
+		ioans = strings.TrimSpace(ioans)
+		if len(ioans) == 0 {
+			fmt.Println("Enter y or n")
+			continue
+		}
+		fields := strings.Fields(ioans)
+		if len(fields) > 1 {
+			fmt.Println("Enter y or n")
+			continue
+		}
+
+		ifY := strings.Compare(fields[0], "y")
+		ifN := strings.Compare(fields[0], "n")
+		if ifY != 0 && ifN != 0 {
+			fmt.Println("Enter y or n")
+			continue
+		} else if ifY == 0 {
+			return true
+		} else if ifN == 0 {
+			return false
 		}
 	}
 }
