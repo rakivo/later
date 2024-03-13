@@ -10,9 +10,11 @@ git clone --depth 1 https://github.com/rakivo/later && cd later
 
 ##### For Linux users:
 > Add ```LATER_YOUTUBE_API_KEY``` to your ~/.bashrc and set it to your actual YouTube API key
+
 > You can optionally run ./scripts/linuxsetpaths.sh. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it. Fun fact: To let your cmd know that you've updated ~/.bashrc file run ```source ~/.bashrc```
 ##### For Windows users:
 > Add ```LATER_YOUTUBE_API_KEY``` to your PATH variables and set it to your actual YouTube API key
+
 > You can optionally try running ./scripts/windowspaths.bat. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
 
 #### Example of set variables from my ~/.bashrc:
@@ -28,9 +30,9 @@ go build -v -ldflags="-s -w" -o later ./src/ # or .\src\ on Windows
 ```
 
 ### Usage:
-> Simply paste your link into the input field, click on the submit button and watch it appear on the right side
+> Simply paste your link into the input field, click on the submit button and watch it appear on the right side of your screen.
 
-> With a single click on the thumbnail you can open that video in the other window
+> With a single click on the thumbnail you can open that video in the other window.
 
 ### Main goal:
 > Get rid of using YouTube API
