@@ -26,6 +26,26 @@ func DBaddVideo(db **bolt.DB, bucket []byte, video *Video) error {
 	})
 }
 
+func DBgetVideo(db **bolt.DB, bucket []byte, key uuid.UUID) (Video, error) {
+	var video Video
+	err := (*db).View(func(tx *bolt.Tx) error {
+		buck := tx.Bucket(bucket); if buck == nil {
+			return fmt.Errorf("Bucket %s not found", bucket)
+		}
+
+		keyBytes := key[:]
+		data := buck.Get(keyBytes); if data == nil {
+			return fmt.Errorf("Key not found: %s", key)
+		}
+
+		if err := json.Unmarshal(data, &video); err != nil {
+			return fmt.Errorf("Error unmarshalling video data: %v", err)
+		}
+		return nil
+	});
+	return video, err
+}
+
 func DBrecover(db **bolt.DB, vm *VideoManager) error {
 	return (*db).View(func(tx *bolt.Tx) error {
 		return tx.ForEach(func(bucketName []byte, bucket *bolt.Bucket) error {
@@ -53,24 +73,4 @@ func DBrecover(db **bolt.DB, vm *VideoManager) error {
 			return nil
 		})
 	})
-}
-
-func DBgetVideo(db **bolt.DB, bucket []byte, key uuid.UUID) (Video, error) {
-	var video Video
-	err := (*db).View(func(tx *bolt.Tx) error {
-		buck := tx.Bucket(bucket); if buck == nil {
-			return fmt.Errorf("Bucket %s not found", bucket)
-		}
-
-		keyBytes := key[:]
-		data := buck.Get(keyBytes); if data == nil {
-			return fmt.Errorf("Key not found: %s", key)
-		}
-
-		if err := json.Unmarshal(data, &video); err != nil {
-			return fmt.Errorf("Error unmarshalling video data: %v", err)
-		}
-		return nil
-	});
-	return video, err
 }

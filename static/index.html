@@ -3,11 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="static/index.css">
+    <link rel="icon" href="static/index.ico" type="image/x-icon">
     <title>later</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            font-family: 'iosevka', monospace;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        form {
+            position: relative;
+        }
+
+        input {
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #ffffff;
+            background-color: #333333;
+            color: #ffffff;
+            border-radius: 7px;
+            width: 300px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 20px 40px;
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background-color: #611212;
+            color: #000000fc0;
+        }
+
+        #video-list {
+            margin-left: 20px;
+        }
+    </style>
 </head>
-<body>  
+<body>
     <form action={{.PostAddr}} method="POST">
         <input type="text" id="link" name="link" placeholder="enter a link...">
         <button type="submit" id="submit-button">send</button>

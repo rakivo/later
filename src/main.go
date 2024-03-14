@@ -9,7 +9,7 @@ import (
 	"strings"
 	"net/http"
 	"html/template"
-	bolt "go.etcd.io/bbolt"
+	"go.etcd.io/bbolt"
 	"github.com/google/uuid"
 )
 
@@ -19,27 +19,10 @@ const (
 )
 
 // get video's id, title, thumbnail; add created video to db and vm
-func addVideo (
-	db **bolt.DB,
-	vm *VideoManager,
-	buck string,
-	url string,
-	client *http.Client,
-	apiKey string,
-	dbChan chan DBreq) (*Video, error) {
-
-	log.Println("Extracting id from url:", url)
-	id, err := extractYouTubeID(url); if err != nil {
-		return nil, fmt.Errorf("Failed to extract YouTube ID: %v", err)
+func addVideo (db **bbolt.DB, vm *VideoManager, buck string, url string, client *http.Client, dbChan chan DBreq) (*Video, error) {
+	title, thumbnail, err := getYouTubeTitleAndThumbnail(&client, url); if err != nil {
+		return nil, fmt.Errorf("Failed to get Title and Thumbnail from url: %s, err: %v", url, err)
 	}
-
-	log.Println("Extracting title from id:", id)
-	title, err := getYouTubeTitle(client, id, apiKey); if err != nil {
-		return nil, fmt.Errorf("failed to get YouTube title: %v", err)
-	}
-	log.Println("Extracted title:", title)
-
-	thumbnail := getYouTubeThumbnail(id)
 
 	key := uuid.New()
 	video := Video{}.New(title, thumbnail, url, key)
@@ -55,16 +38,13 @@ func addVideo (
    1. proper frontend
 	  proper readme
 
-   2. get rid of using youtube api
-
-   3. gif preview
+   2. gif preview
 */
 
 func main() {
-	YT_API_KEY := os.Getenv("LATER_YOUTUBE_API_KEY")
-	LATER_DIR  := os.Getenv("LATER_PROJECT_DIR")
+	LATER_DIR := os.Getenv("LATER_PROJECT_DIR")
 
-	db, err := bolt.Open(LATER_DIR + DB_FILE, 0600, nil); if err != nil {
+	db, err := bbolt.Open(LATER_DIR + DB_FILE, 0600, nil); if err != nil {
 		log.Fatal(err)
 		return
 	}; defer db.Close()
@@ -74,7 +54,7 @@ func main() {
 	if y {
 		checkErr_(DBrecover(&db, &vm), true)
 	} else if !y && !n {
-		if ask(bufio.NewReader(os.Stdin)) {
+		if ask("Recover videos from previous sessions", bufio.NewReader(os.Stdin)) {
 			checkErr_(DBrecover(&db, &vm), true)
 		}
 	}
@@ -93,15 +73,13 @@ func main() {
 
 	client := http.Client{ Timeout: 5 * time.Second }
 	tmpl, err := template.ParseFiles(LATER_DIR + "static/index.html"); checkErr_(err, true)
-
 	http.Handle(LATER_DIR + "/static/", http.StripPrefix(LATER_DIR + "/static/", http.FileServer(http.Dir(LATER_DIR + "/static"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			url := r.FormValue("link")
-			log.Println("Catched url:", url)
+			log.Println("Entered url:", url)
 
-			_, err := addVideo(&db, &vm, YT_BUCK, url, &client, YT_API_KEY, dbChan);
-			checkErr_(err, false)
+			_, err := addVideo(&db, &vm, YT_BUCK, url, &client, dbChan); checkErr_(err, false)
 			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK); checkErr_(err, false)
 		} else {
 			checkGetAndRender_(&tmpl, &w, &vm, YT_BUCK)
@@ -161,9 +139,9 @@ func checkGetAndRender_(tmpl **template.Template, w *http.ResponseWriter, vm *Vi
 	}
 }
 
-func ask(ior *bufio.Reader) bool {
+func ask(msg string, ior *bufio.Reader) bool {
 	for {
-		fmt.Printf("Recover videos from previous sessions? [y/n] ")
+		fmt.Printf("%s? [y/n] ", msg)
 		ioans, err := ior.ReadString('\n'); if err != nil {
 			fmt.Println("ERROR reading input:", err)
 			continue

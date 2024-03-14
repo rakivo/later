@@ -6,15 +6,10 @@
 ```shell
 git clone --depth 1 https://github.com/rakivo/later && cd later
 ```
-> - You need to obtain free [YouTube Data API v3 api key](https://developers.google.com/youtube/v3), follow this [guide from Google](https://developers.google.com/youtube/v3/getting-started). This is needed because there's no way(AFAIK) to get the title of a YT video without an API key
 
 ##### For Linux users:
-> Add ```LATER_YOUTUBE_API_KEY``` to your ~/.bashrc and set it to your actual YouTube API key
-
 > You can optionally run ```./scripts/linuxsetpaths.sh```. This script adds the necessary variables(there are only 2 of them) to PATH so that you can run 'later' not only from the project directory but from anywhere after building it. Fun fact: To let your cmd know that you've updated ~/.bashrc file run ```source ~/.bashrc```
 ##### For Windows users:
-> Add ```LATER_YOUTUBE_API_KEY``` to your PATH variables and set it to your actual YouTube API key
-
 > You can optionally try running ```./scripts/windowspaths.bat```. Hovewer, I'm not sure if it will work because I use Arch, btw). (I'm sorry, I'll test it this week).
 
 #### Example of set variables from my ~/.bashrc:
@@ -34,8 +29,9 @@ go build -v -ldflags="-s -w" -o later ./src/ # or .\src\ on Windows
 
 > With a single click on the thumbnail you can open that video in the other window.
 
-### Main goal:
-> Get rid of using YouTube API
+### Future plans:
+> - Simplify installation
+> - Support more platforms
 
 #### References of used dependencies:
 > uuid     - https://github.com/google/uuid

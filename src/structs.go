@@ -120,14 +120,7 @@ func (_ DBreq) New(Bucket []byte, Video *Video) DBreq {
 	}
 }
 
-type YouTubeSnippet struct {
-	Title string `json:"title"`
-}
-
-type YouTubeItem struct {
-	Snippet YouTubeSnippet `json:"snippet"`
-}
-
-type YouTubeVidResp struct {
-	Items []YouTubeItem `json:"items"`
+type YTresp struct {
+	Title    string `json:"title"`
+    ThumbUrl string `json:"thumbnail_url"`
 }
